@@ -11,7 +11,11 @@ After filling the keys file, the program is started with either the statisticsDo
 
 #Description of files
 dataBaseExporter: 	Export databases from Google Trends, Google News and Crunchbase. Returns a pandas dataframe for the searched for the attributes industry, starting date, end date and frequency.
+
 googleDownloader: 	Downloaded from https://github.com/dreyco676/pytrends and slightly modified.
-investDataAnalyzer:	Does the main analysis work. Main script, will return descriptive statistics and diagrams
+
+investDataAnalyzer:	Does the main analysis work. Main script, will return descriptive statistics and diagrams.
+
 keys: Text file for keeping the keys for the databases.
+
 statisticsDownloader: Calls the export files. Collect the files and summarizes them according the input. Returns a the summarized data frame when calles or saves the dataframe when started directly.
