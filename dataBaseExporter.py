@@ -1,5 +1,5 @@
 import os
-import urllib
+from urllib import urlencode
 import requests
 import time
 from random import randint
@@ -7,18 +7,65 @@ from random import randint
 from pandas import DataFrame
 import pandas as pd
 
-from googleDownloader import pyGTrends
+from pytrends.pyGTrends import pyGTrends
+
+#Modify the pyGTrends class and the download_report method to consider additional arguments, 
+#especially the differentiation between trends and news. Used om googleFramer
+class googleExport(pyGTrends):
+    def request_report(self, keywords, gprop = None, hl='en-US', cat=None, geo='US',
+                        date=None, use_topic=False):
+        # use_topic prevents re-urlencoding of topic id's.
+        if use_topic:
+            query_param = 'q=' + keywords
+        else:
+            query_param = str(urlencode({'q':keywords}))
+
+        # This logic handles the default of skipping parameters
+        # Parameters that are set to '' will not filter the data requested.
+        # See Readme.md for more information
+        if cat is not None:
+            cat_param = '&cat=' + cat
+        else:
+            cat_param = ''
+        if date is not None:
+            date_param = '&' + str(urlencode({'date':date}))
+        else:
+            date_param = ''
+        if geo is not None:
+            geo_param = '&geo=' + geo
+        else:
+            geo_param = ''
+        hl_param = '&hl=' + hl
+        if gprop == 'news':
+        	gprop_param  = '&gprop=' + gprop
+        else:
+        	gprop_param = ''
+
+        # These are the default parameters and shouldn't be changed.
+        cmpt_param = "&cmpt=q"
+        content_param = "&content=1"
+        export_param = "&export=1"
+
+        combined_params = query_param + cat_param + date_param \
+                          + geo_param + gprop_param + hl_param + cmpt_param + content_param + export_param
+
+        raw_data = self.opener.open("http://www.google.com/trends/trendsReport?" + combined_params).read()
+        self.decode_data = raw_data.decode('utf-8')
+
+        if self.decode_data in ["You must be signed in to export data from Google Trends"]:
+            print("You must be signed in to export data from Google Trends")
+            raise Exception(self.decode_data)
 
 
 def crunchBaseGrabber(crunchBaseDict, inputDict):
-
 	#Get the input arguments
 	cbKey = crunchBaseDict['crunchBaseKey']
 	startDate = inputDict['startDate']
 	endDate = inputDict['endDate']
 	industry = inputDict['industry']
 
-	'''There is no API which grants an overviewing access to the crunchbase funding data,
+	'''
+	There is no API which grants an overviewing access to the crunchbase funding data,
 	thus the excel import is used.
 	First the programm checks if the file is already on disk in the 'Excel Folder'. If no, its downloaded and saved.
 	'''
@@ -52,8 +99,8 @@ def crunchBaseGrabber(crunchBaseDict, inputDict):
 	return cbExcelFinal
 
 
-def googleFramer(googleDict, inputDict, exportType):
 	
+def googleFramer(googleDict, inputDict, exportType = None):
 	# Define and import the relevant input arguments
 	startDate = inputDict['startDate']
 	endDate = inputDict['endDate']
@@ -62,14 +109,14 @@ def googleFramer(googleDict, inputDict, exportType):
 	google_pass = googleDict['googlePassword']
 
 	# Create the csv downloader object
-	downloader = pyGTrends(google_username, google_pass)
+	downloader = googleExport(google_username, google_pass)
 
 	# Wait some time to avoid blocking by google
 	time.sleep(randint(0, 5))
 
 	# Attributes for the url - differentiate between trends and news
-	csvTable = downloader.download_report(keywords = industry, gprop = exportType)
-
+	downloader.request_report(keywords = industry, gprop = exportType, geo = 'US', hl = 'en-US')
+	csvTable = downloader.get_data()
 	# Export only relevant week data (quick and dirty solution, will improve it in a later version)
 	weeksTable = csvTable.split('\n')[5:]
 	count = 0
@@ -90,7 +137,7 @@ def googleFramer(googleDict, inputDict, exportType):
 		if woche[1] not in ['',' ']:
 			weekList.append([woche[0], int(woche[1])])
 	# Create a dataframe out of the week list         
-	resultFrame = DataFrame(weekList, columns = ['EndWeek', 'Google Index for %s' % exportType.capitalize()])
+	resultFrame = DataFrame(weekList, columns = ['EndWeek', 'GoogleIndex%s' % exportType.capitalize()])
 	
 	# Change date to datetime format
 	resultFrame['EndWeek'] = pd.to_datetime(resultFrame['EndWeek'])

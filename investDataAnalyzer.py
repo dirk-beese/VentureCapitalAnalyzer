@@ -7,7 +7,6 @@ import numpy as np
 import scipy as sp
 import math
 from statisticDownloader import statisticDownloader
-global anaTable
 
 def checkUserInput():
     fileDict = {}
@@ -26,25 +25,41 @@ def checkUserInput():
         sys.exit("You did not enter a valid number. Abort.")
     elif fileNumber == len(fileDict.keys()):
         print "Which file would you like to analyze?"
-        industry = raw_input("Industry: ")
-        startDate = raw_input("Start date in form yyyy-mm-dd: ")
-        endDate = raw_input("End date in form yyyy-mm-dd: ")
-        frequency = raw_input("Frequency (year, quarter, month): ")
+        industryInput = raw_input("Industry: ")
+        if industryInput == "": 
+          industry = "big data" 
+        else: 
+          industry = industryInput
+        startDateInput = raw_input("Start date in form yyyy-mm-dd: ")
+        if startDateInput == "":
+          startDate = "2010-01-01"
+        else:
+         startDate = startDateInput
+        endDateInput = raw_input("End date in form yyyy-mm-dd: ")
+        if endDateInput == "":
+          endDate = "2014-12-31" 
+        else:
+         endDate =endDateInput
+        frequencyInput = raw_input("Frequency (year, quarter, month): ")
+        if frequencyInput == "":
+          frequency = "Quarter" 
+        else:
+         frequency = frequcenyInput
         print "Your data is being exported, please wait."
         anaTable = statisticDownloader(industry, startDate, endDate, frequency)
         print "Your data was successfully downloaded. Save for later use?"
         decision = raw_input("1: Yes\n2: No\n")
-        if decision == 1 or decision == 'Yes':
-            filename = "statistics_%s_%s:%s_%s" % (industry, startDate, endDate, frequency)
+        if decision == '1' or decision == 'Yes':
+            filename = "statistics_%s_%s_%s_%s" % (industry, startDate, endDate, frequency)
             anaTable.to_pickle('%s.pkl' % filename)
             print "Data was successfully saved to %s" % filename
-            return anaTable
+        return anaTable
     else:
         anaTable = pd.read_pickle(fileDict[fileNumber])
         return anaTable
 
 def analyzer(anaTable):
-    print anaTable
+    anaTable = anaTable
 
 if __name__ == '__main__':
     anaTable = checkUserInput()

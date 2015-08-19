@@ -30,8 +30,7 @@ def dataSummarizer(inputDict, crunchBase, googleTrends= None, googleNews = None,
 
   # Concate the tables from crunchbase, from Google NEws and Google Trends
   dailyTable = pd.concat([dailyTable,crunchBaseArt.count()['IndustryPresent'], crunchBaseArt.sum()['raised_amount_usd'], googleTrends, googleNews], axis = 1, join = 'outer')
-  dailyTable.rename(columns = {'IndustryPresent': 'Count','raised_amount_usd' : 'Funding Volume'}, inplace = True)
-
+  dailyTable.rename(columns = {'IndustryPresent': 'Count','raised_amount_usd' : 'FundingVolume'}, inplace = True)
 
   if frequency.lower() in ['y','year','yearly']:
     return dailyTable.groupby([lambda x: x.year]).agg([np.sum, np.mean])
@@ -69,7 +68,7 @@ def statisticDownloader(industry = 'data analytics',
     print "Sorry, the entered StartDate is after the entered EndDate"
     return None
   if endDateFormat > datetime.datetime.now():
-    print "Unfortunately, no one can look into the future. Not even a programmer :("
+    print "If i could look in the future, I would not program a python script but play lotto. Please enter an earlier EndDate"
     return None
 
   #Define Dictionaries
@@ -104,20 +103,35 @@ def statisticDownloader(industry = 'data analytics',
 
 if __name__ == '__main__':
   # Check if there are enough arguments, require userinput if not
-		if len(sys.argv) <=4:
-				print "Which data would you like to analyze?"
-				industry = raw_input("Industry: ")
-				startDate = raw_input("Start date in form yyyy-mm-dd: ")
-				endDate = raw_input("End date in form yyyy-mm-dd: ")
-				frequency = raw_input("Frequency (year, quarter, month): ")
-		elif len(sys.argv) >= 6:
-			sys.exit("Too many arguments")
-		else:
-				industry, startDate, endDate, frequency = sys.argv[1:5]
+    if len(sys.argv) <=4:
+        print "Which data would you like to analyze?"
+        industryInput = raw_input("Industry: ")
+        if industryInput == "": 
+          industry = "big data" 
+        else: 
+          industry = industryInput
+        startDateInput = raw_input("Start date in form yyyy-mm-dd: ")
+        if startDateInput == "":
+          startDate = "2010-01-01"
+        else:
+         startDate = startDateInput
+        endDateInput = raw_input("End date in form yyyy-mm-dd: ")
+        if endDateInput == "":
+          endDate = "2014-12-31" 
+        else:
+         endDate =endDateInput
+        frequencyInput = raw_input("Frequency (year, quarter, month): ")
+        if frequencyInput == "":
+          frequency = "Quarter" 
+        else:
+         frequency = frequcenyInput
+    elif len(sys.argv) >= 6:
+      sys.exit("Too many arguments")
+    else:
+        industry, startDate, endDate, frequency = sys.argv[1:5]
 
-		print "Data is being exported. Please wait, it takes around a minute."
-		analysisTable = statisticDownloader(industry, startDate, endDate, frequency) #Start export, and return as dataframe
-		filename = "statistics_%s_%s_%s_%s" % (industry, startDate, endDate, frequency)
-		analysisTable.to_pickle('%s.pkl' % filename)
-		print "Data was successfully saved to %s" % filename
-
+    print "Data is being exported. Please wait, it takes around a minute."
+    analysisTable = statisticDownloader(industry, startDate, endDate, frequency) #Start export, and return as dataframe
+    filename = "statistics_%s_%s_%s_%s" % (industry, startDate, endDate, frequency)
+    analysisTable.to_pickle('%s.pkl' % filename)
+    print "Data was successfully saved to %s" % filename
