@@ -1,11 +1,12 @@
-import pandas as pd
 import datetime
+import sys
 
-import sys, os
+import pandas as pd
+from pandas import DataFrame
+import numpy as np
 
-from googleExport import googleFramer
-from crunchBaseFramer import crunchBaseGrabber
-from dataSummarizer import dataSummarizer
+from dataBaseExporter import googleFramer, crunchBaseGrabber
+
 
 def getKeys(dictionary,keys):
     for dictKey in dictionary.keys():
@@ -13,11 +14,39 @@ def getKeys(dictionary,keys):
             if key.split(':')[0].strip(' ,\t\n\r') == dictKey][0]
     return dictionary
 
+def dataSummarizer(inputDict, crunchBase, googleTrends= None, googleNews = None, frequency = 'Q'):
+  
+  #First, create an empty dataframe with the dates between start and enddate as index for a daily basis
+  startDate = inputDict['startDate']
+  endDate = inputDict['endDate']
+  dateRange = pd.date_range(start = startDate, 
+                           end = endDate,
+                           freq = 'D')
+  dailyTable = DataFrame(index = dateRange)
+
+  # Match crunchbasedata to date dataframe, summarizing daily investments, in this first version I only consider venture capital investments, later a differitation will be possible  
+  crunchBaseSub = crunchBase[(crunchBase['funding_round_type'] == 'venture')]
+  crunchBaseArt = crunchBaseSub.groupby(['funded_at'])
+
+  # Concate the tables from crunchbase, from Google NEws and Google Trends
+  dailyTable = pd.concat([dailyTable,crunchBaseArt.count()['IndustryPresent'], crunchBaseArt.sum()['raised_amount_usd'], googleTrends, googleNews], axis = 1, join = 'outer')
+  dailyTable.rename(columns = {'IndustryPresent': 'Count','raised_amount_usd' : 'Funding Volume'}, inplace = True)
+
+
+  if frequency.lower() in ['y','year','yearly']:
+    return dailyTable.groupby([lambda x: x.year]).agg([np.sum, np.mean])
+  elif frequency.lower() in ['q','quarter','quarterly']:
+    return dailyTable.groupby([lambda x: x.year, lambda x: x.quarter]).agg([np.sum, np.mean])
+  elif frequency.lower() in ['m','month','monthly']:
+    return dailyTable.groupby([lambda x: x.year, lambda x: x.quarter, lambda x: x.month]).agg([np.sum, np.mean])
+  else:
+    return None
+
 
 def statisticDownloader(industry = 'data analytics', 
                startDate = datetime.datetime.now() - datetime.timedelta(365), 
                endDate = datetime.datetime.now(),
-               frequence = 'Q'):
+               frequency = 'Q'):
 
   # Transform date to datetime form and check if date inputs are in the right form
   dateForm = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
@@ -32,6 +61,7 @@ def statisticDownloader(industry = 'data analytics',
     print "%s is not a valid end-date format, please enter in format 'yyyy-mm-dd'" % endDate
     return None
 
+  # Check for valid date input
   if startDateFormat < datetime.datetime(2008,01,01):
     print "Sorry, earliest possible start date is 2008-01-01 due to the late emerge of CrunchBase"
     return None
@@ -41,7 +71,6 @@ def statisticDownloader(industry = 'data analytics',
   if endDateFormat > datetime.datetime.now():
     print "Unfortunately, no one can look into the future. Not even a programmer :("
     return None
-
 
   #Define Dictionaries
   crunchBaseDict = {'crunchBaseKey' : ''}
@@ -69,8 +98,26 @@ def statisticDownloader(industry = 'data analytics',
   googleNewsFrame = googleFramer(googleDict, inputDict, 'news')
 
   #Use the CrunchBase and Google Data to create the final analysis table
-  analysisTable = dataSummarizer(inputDict, crunchBaseFrame, googleTrendsFrame, googleNewsFrame, frequence)
-  analysisTable.to_pickle('statisticTable.pkl')
+  analysisTable = dataSummarizer(inputDict, crunchBaseFrame, googleTrendsFrame, googleNewsFrame, frequency)
+  return analysisTable
+
 
 if __name__ == '__main__':
-    statisticDownloader(industry = 'big data', startDate = '2010-01-01', endDate = '2015-01-01', frequence = 'Q')
+  # Check if there are enough arguments, require userinput if not
+		if len(sys.argv) <=4:
+				print "Which data would you like to analyze?"
+				industry = raw_input("Industry: ")
+				startDate = raw_input("Start date in form yyyy-mm-dd: ")
+				endDate = raw_input("End date in form yyyy-mm-dd: ")
+				frequency = raw_input("Frequency (year, quarter, month): ")
+		elif len(sys.argv) >= 6:
+			sys.exit("Too many arguments")
+		else:
+				industry, startDate, endDate, frequency = sys.argv[1:5]
+
+		print "Data is being exported. Please wait, it takes around a minute."
+		analysisTable = statisticDownloader(industry, startDate, endDate, frequency) #Start export, and return as dataframe
+		filename = "statistics_%s_%s_%s_%s" % (industry, startDate, endDate, frequency)
+		analysisTable.to_pickle('%s.pkl' % filename)
+		print "Data was successfully saved to %s" % filename
+
