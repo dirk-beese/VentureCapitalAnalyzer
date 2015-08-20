@@ -12,6 +12,7 @@ from pytrends.pyGTrends import pyGTrends
 #Modify the pyGTrends class and the download_report method to consider additional arguments, 
 #especially the differentiation between trends and news. Used om googleFramer
 class googleExport(pyGTrends):
+    '''Change the pyGTrends class to consider additional arguments in the request report'''
     def request_report(self, keywords, gprop = None, hl='en-US', cat=None, geo='US',
                         date=None, use_topic=False):
         # use_topic prevents re-urlencoding of topic id's.
@@ -58,17 +59,17 @@ class googleExport(pyGTrends):
 
 
 def crunchBaseGrabber(crunchBaseDict, inputDict):
-	#Get the input arguments
-	cbKey = crunchBaseDict['crunchBaseKey']
-	startDate = inputDict['startDate']
-	endDate = inputDict['endDate']
-	industry = inputDict['industry']
-
 	'''
 	There is no API which grants an overviewing access to the crunchbase funding data,
 	thus the excel import is used.
 	First the programm checks if the file is already on disk in the 'Excel Folder'. If no, its downloaded and saved.
 	'''
+	
+	#Get the input arguments
+	cbKey = crunchBaseDict['crunchBaseKey']
+	startDate = inputDict['startDate']
+	endDate = inputDict['endDate']
+	industry = inputDict['industry']
 
 	cbUrl = 'https://api.crunchbase.com/v/3/excel_export/crunchbase_export.xlsx?user_key=%s' % cbKey
 	if not os.path.exists('./Excel'):
@@ -101,6 +102,8 @@ def crunchBaseGrabber(crunchBaseDict, inputDict):
 
 	
 def googleFramer(googleDict, inputDict, exportType = None):
+	'''Calls the google export class and creates a pandas dataframe'''
+	
 	# Define and import the relevant input arguments
 	startDate = inputDict['startDate']
 	endDate = inputDict['endDate']
