@@ -84,21 +84,7 @@ class Analyzer(object):
 
     def calc_correlations(self):
       	'''Calculate correlations between the variables'''
-       	self.correlations = {}
-        self.correlations.update({('Number of Funding Rounds', 'Sum of Funding Volume') :
-                         self.table.Count['sum'].corr(self.table.FundingVolume['sum'])})
-        self.correlations.update({('Number of Funding Rounds', 'Avg Funding Volume') :
-                       self.table.Count['sum'].corr(self.table.FundingVolume['mean'])})
-        self.correlations.update({('Number of Funding Rounds','Google News Index') :
-                       self.table.Count['sum'].corr(self.table.GoogleIndexNews['mean'])})
-        self.correlations.update({('Number of Funding Rounds','Google Trends Index') :
-                       self.table.Count['sum'].corr(self.table.GoogleIndexTrends['mean'])})
-        self.correlations.update({('Avg Funding Volume','Sum of Funding Volume') :
-                       self.table.FundingVolume['mean'].corr(self.table.FundingVolume['sum'])})
-        self.correlations.update({('Avg Funding Volume','Google News Index') :
-                       self.table.FundingVolume['mean'].corr(self.table.GoogleIndexNews['mean'])})
-        self.correlations.update({('Avg Funding Volume','Google Trends Index') :
-                       self.table.FundingVolume['mean'].corr(self.table.GoogleIndexTrends['mean'])})
+       	self.correlations = self.table.corr()
     
     def get_correlations(self):
     	'''Return the correlations. Calculate if necessary'''
@@ -110,20 +96,14 @@ class Analyzer(object):
 
     def get_columns(self):
     	'''Get the columns of the tabel'''
-        return self.table.columns.levels
+        return self.table.columns.get_level_values(1)
     
     def get_column_list(self):
     	'''Zip the columns together because they built a multi index '''
-        columnList = self.get_columns()
-        choiceList = []
-        for i in columnList[0]:
-            for j in columnList[1]:
-                choiceList.append('%s - %s' % (i,j))
+        columnList = zip(self.table.columns.get_level_values(0), self.table.columns.get_level_values(1))
+        choiceList = [' - '.join(zeile) for zeile in columnList]
         return choiceList
 
-    def get_single_correlation(self, (arg1, arg2)):
-        return self.correlations[(arg1,arg2)]
-    
     def make_diagram(self, *args):
         '''Make diagram out of given arguments. Check frequency for the right ticks and datapoints. Safe plot in class'''
         self.fig = plt.figure()
@@ -180,9 +160,7 @@ class Analyzer(object):
     	'''Prints the useful correlation of the table'''
         correlation_list = self.get_correlations()
         print "Relevant correlations:"
-        for i,j in correlation_list.items():
-            print '%s - %s : %.4f' % (i[0], i[1], float(j))
-        print ""   
+        print self.correlations.applymap(lambda x: '%.3f' % float(x))   
         
     def print_summary(self):
     	print "Summary:"
@@ -214,9 +192,7 @@ class Analyzer(object):
 
 if __name__ == '__main__':
     anaTable = Analyzer(checkUserInput())
-    anaTable.print_summary()
-    anaTable.print_correlations()
     anaTable.print_table()
+    anaTable.print_correlations()
     anaTable.make_diagram_input()
     anaTable.show_diagram()
-    anaTable.save_diagram()

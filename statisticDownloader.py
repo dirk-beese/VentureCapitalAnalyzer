@@ -35,14 +35,16 @@ def dataSummarizer(inputDict,
 
   # Concate the tables from crunchbase, from Google NEws and Google Trends
   dailyTable = pd.concat([dailyTable,crunchBaseArt.count()['IndustryPresent'], crunchBaseArt.sum()['raised_amount_usd'], googleTrends, googleNews], axis = 1, join = 'outer')
-  dailyTable.rename(columns = {'IndustryPresent': 'Count','raised_amount_usd' : 'FundingVolume'}, inplace = True)
+  
+  dailyTable.rename(columns = {'IndustryPresent': 'Funding_Rounds_Number','raised_amount_usd' : 'Funding_Volume'}, inplace = True)
 
+  calc_dict = {'Funding_Rounds_Number' : 'sum', 'Funding_Volume' : ['sum','mean'], 'GoogleIndexNews' : 'mean', 'GoogleIndexTrends' : 'mean'}
   if frequency.lower() in ['y','year','yearly']:
-    return dailyTable.groupby([lambda x: x.year]).agg([np.sum, np.mean])
+    return dailyTable.groupby([lambda x: x.year]).agg(calc_dict)
   elif frequency.lower() in ['q','quarter','quarterly']:
-    return dailyTable.groupby([lambda x: x.year, lambda x: x.quarter]).agg([np.sum, np.mean])
+    return dailyTable.groupby([lambda x: x.year, lambda x: x.quarter]).agg(calc_dict)
   elif frequency.lower() in ['m','month','monthly']:
-    return dailyTable.groupby([lambda x: x.year, lambda x: x.quarter, lambda x: x.month]).agg([np.sum, np.mean])
+    return dailyTable.groupby([lambda x: x.year, lambda x: x.quarter, lambda x: x.month]).agg(calc_dict)
   else:
     return None
 
